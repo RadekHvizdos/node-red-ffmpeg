@@ -44,7 +44,7 @@ module.exports = RED => {
 
         this.cmdPath = config.cmdPath.trim() || FfmpegNode.cmdPath;
 		
-		this.cwdPath = config.cwdPath.trim() || FfmpegNode.cwdPath;
+        this.cwdPath = config.cwdPath.trim() || FfmpegNode.cwdPath;
 
         this.cmdArgs = config.cmdArgs ? FfmpegNode.jsonParse(config.cmdArgs) : ['-version'];
 
@@ -54,7 +54,7 @@ module.exports = RED => {
 
         FfmpegNode.validateCmdPath(this.cmdPath); // throws
 		
-		FfmpegNode.validateCwdPath(this.cwdPath); // throws
+        FfmpegNode.validateCwdPath(this.cwdPath); // throws
 
         FfmpegNode.validateCmdArgs(this.cmdArgs); // throws
 
