@@ -17,7 +17,7 @@ module.exports = RED => {
 
       ffmpegSettings.cmdPath = /ffmpeg/i.test(cmdPath) ? cmdPath.trim() : defaults.cmdPath;
 	  
-	  ffmpegSettings.cwdPath = /\./i.test(cwdPath) ? cwdPath.trim() : defaults.cwdPath;
+      ffmpegSettings.cwdPath = cwdPath?.trim() ? cwdPath.trim() : defaults.cwdPath;
 
       ffmpegSettings.cmdOutputsMax = Number.isInteger(cmdOutputsMax) && cmdOutputsMax > 5 ? cmdOutputsMax : defaults.cmdOutputsMax;
 
