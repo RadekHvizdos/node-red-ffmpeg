@@ -1,13 +1,15 @@
 <script type="text/javascript">
   const FFMPEG = (() => {
-    const defaults = { cmdPath: 'ffmpeg', cmdOutputsMax: 5, secretType: 'text' };
+    const defaults = { cmdPath: 'ffmpeg', cwdPath: '.', cmdOutputsMax: 5, secretType: 'text' };
 
     const { ffmpeg: ffmpegSettings } = RED.settings;
 
     if (ffmpegSettings instanceof Object) {
-      const { cmdPath, cmdOutputsMax, secretType } = ffmpegSettings;
+      const { cmdPath, cwdPath, cmdOutputsMax, secretType } = ffmpegSettings;
 
       ffmpegSettings.cmdPath = /ffmpeg/i.test(cmdPath) ? cmdPath.trim() : defaults.cmdPath;
+
+      ffmpegSettings.cwdPath = /\./i.test(cwdPath) ? cwdPath.trim() : defaults.cwdPath;
 
       ffmpegSettings.cmdOutputsMax = Number.isInteger(cmdOutputsMax) && cmdOutputsMax > 5 ? cmdOutputsMax : defaults.cmdOutputsMax;
 
@@ -40,6 +42,10 @@
           return cmdPath === '' || /^\s*$|ffmpeg/i.test(cmdPath);
         },
       },
+      cwdPath: {
+        value: FFMPEG.cwdPath,
+      },
+
       cmdArgs: {
         value: JSON.stringify(['-version']),
         validate: function (cmdArgs) {
@@ -95,6 +101,17 @@
           this.value = this.value.trim();
 
           this.title = this.value || cmdPathPlaceholder;
+        });
+
+      const cwdPathPlaceholder = FFMPEG.cwdPath;
+
+      const cwdPath = $('#node-input-cwdPath')
+        .prop('placeholder', cwdPathPlaceholder)
+        .prop('title', this.cwdPath || cwdPathPlaceholder)
+        .on('input', function () {
+          this.value = this.value.trim();
+
+          this.title = this.value || cwdPathPlaceholder;
         });
 
       const cmdArgs = $('#node-input-cmdArgs')
@@ -166,6 +183,13 @@
     <div class="form-row">
       <label for="node-input-cmdPath"><i class="fa fa-terminal"></i> Path</label>
       <input type="text" id="node-input-cmdPath" />
+    </div>
+
+    <p class="form-tips">Path to start the ffmpeg process in.</p>
+
+    <div class="form-row">
+      <label for="node-input-cwdPath"><i class="fa fa-folder"></i> Start in</label>
+      <input type="text" id="node-input-cwdPath" />
     </div>
 
     <p class="form-tips">Array of arguments passed to the ffmpeg process.</p>
