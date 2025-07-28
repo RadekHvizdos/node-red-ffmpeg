@@ -10,12 +10,14 @@ module.exports = RED => {
   } = RED;
 
   const FFMPEG = (() => {
-    const defaults = { cmdPath: 'ffmpeg', cmdOutputsMax: 5, secretType: 'text' };
+    const defaults = { cmdPath: 'ffmpeg', cwdPath: '.', cmdOutputsMax: 5, secretType: 'text' };
 
     if (ffmpegSettings instanceof Object) {
-      const { cmdPath, cmdOutputsMax, secretType } = ffmpegSettings;
+      const { cmdPath, cwdPath, cmdOutputsMax, secretType } = ffmpegSettings;
 
       ffmpegSettings.cmdPath = /ffmpeg/i.test(cmdPath) ? cmdPath.trim() : defaults.cmdPath;
+	  
+	  ffmpegSettings.cwdPath = /\./i.test(cwdPath) ? cwdPath.trim() : defaults.cwdPath;
 
       ffmpegSettings.cmdOutputsMax = Number.isInteger(cmdOutputsMax) && cmdOutputsMax > 5 ? cmdOutputsMax : defaults.cmdOutputsMax;
 
@@ -41,6 +43,8 @@ module.exports = RED => {
         this.stopping = false;
 
         this.cmdPath = config.cmdPath.trim() || FfmpegNode.cmdPath;
+		
+		this.cwdPath = config.cwdPath.trim() || FfmpegNode.cwdPath;
 
         this.cmdArgs = config.cmdArgs ? FfmpegNode.jsonParse(config.cmdArgs) : ['-version'];
 
@@ -49,6 +53,8 @@ module.exports = RED => {
         this.killSignal = ['SIGHUP', 'SIGINT', 'SIGKILL', 'SIGTERM'].includes(config.killSignal) ? config.killSignal : 'SIGTERM';
 
         FfmpegNode.validateCmdPath(this.cmdPath); // throws
+		
+		FfmpegNode.validateCwdPath(this.cwdPath); // throws
 
         FfmpegNode.validateCmdArgs(this.cmdArgs); // throws
 
@@ -107,11 +113,11 @@ module.exports = RED => {
       }
 
       if (typeof action === 'object') {
-        const { command, signal, path, args, env } = action;
+        const { command, signal, path, cwd, args, env } = action;
 
         switch (command) {
           case 'start':
-            this.start(payload, path, args, env, filename);
+            this.start(payload, path, cwd, args, env, filename);
 
             break;
 
@@ -123,7 +129,7 @@ module.exports = RED => {
           case 'restart':
             await this.stop(signal);
 
-            this.start(payload, path, args, env, filename);
+            this.start(payload, path, cwd, args, env, filename);
 
             break;
 
@@ -149,13 +155,19 @@ module.exports = RED => {
       done();
     }
 
-    start(payload, cmdPath, cmdArgs, cmdEnv, outFilenames) {
+    start(payload, cmdPath, cwdPath, cmdArgs, cmdEnv, outFilenames) {
       if (!this.running) {
         try {
           if (typeof cmdPath !== 'undefined') {
             FfmpegNode.validateCmdPath(cmdPath); // throws
           } else {
             cmdPath = this.cmdPath;
+          }
+
+          if (typeof cwdPath !== 'undefined') {
+            FfmpegNode.validateCwdPath(cwdPath); // throws
+          } else {
+            cwdPath = this.cwdPath;
           }
 
           if (typeof cmdArgs !== 'undefined') {
@@ -172,7 +184,7 @@ module.exports = RED => {
 
           const env = typeof cmdEnv === 'object' ? { ...process.env, ...cmdEnv } : process.env;
 
-          const ffmpeg = spawn(cmdPath, cmdArgs, { stdio, env });
+          const ffmpeg = spawn(cmdPath, cmdArgs, { cwd: cwdPath, stdio, env });
 
           ffmpeg.once('error', err => {
             this.error(err);
@@ -373,6 +385,13 @@ module.exports = RED => {
       }
     }
 
+    static validateCwdPath(cwdPath) {
+      if (typeof cwdPath !== 'string') {
+        throw new Error(_('ffmpeg.error.cwd_path_invalid', { cwdPath }));
+      }
+    }
+
+
     static validateCmdArgs(cmdArgs) {
       if (!Array.isArray(cmdArgs)) {
         throw new Error(_('ffmpeg.error.cmd_args_invalid', { cmdArgs }));
@@ -395,6 +414,8 @@ module.exports = RED => {
   }
 
   FfmpegNode.cmdPath = FFMPEG.cmdPath;
+  
+  FfmpegNode.cwdPath = FFMPEG.cwdPath;
 
   FfmpegNode.cmdOutputsMax = FFMPEG.cmdOutputsMax;
 
